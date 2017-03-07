@@ -39,7 +39,7 @@ class LocalLinearExplanation():
             yy = yy + -2*(yy-ymid)
             plt.scatter(xx, yy, c=color)
 
-  def imshow_bw(self, imgshape, cutoff=0.67, xoff=0, yoff=0):
+  def imshow_bw(self, imgshape, cutoff=0.0, xoff=0, yoff=0, size=75, lw=2, pwr=2):
     # display the image
     l, w = imgshape
     plt.imshow(self.x.reshape(imgshape), interpolation='none', cmap='gray',
@@ -50,6 +50,7 @@ class LocalLinearExplanation():
     maxcoef = np.abs(self.coefs).max()
     markers = [None,'+','_']
     colors = [None, 'g', 'r']
+    cutoff = 0.1
     for y in range(l):
       for x in range(w):
         for i, coef in enumerate(listwrap(coefs[y][x])):
@@ -58,7 +59,10 @@ class LocalLinearExplanation():
             yy = l*yoff + y + 0.5
             ymid = l*(yoff+0.5)
             yy = yy + -2*(yy-ymid)
-            plt.scatter(xx, yy, s=75, alpha=0.6, c=colors[int(np.sign(coef))], marker=markers[int(np.sign(coef))], lw=2)
+            plt.scatter(xx, yy, s=size, lw=lw,
+                alpha=(abs(coef)/maxcoef)**pwr, # make opacity relative to magnitude
+                c=colors[int(np.sign(coef))], # make color
+                marker=markers[int(np.sign(coef))]) # and marker depend on sign
 
 def explanation_grid(explanations, imgshape, length, pad=0.1, **kwargs):
   assert(len(explanations) >= length*length)

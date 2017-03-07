@@ -34,7 +34,7 @@ def l2_irrelevant_input_gradients(params, inputs, irrelevancies):
   predict_grads = elementwise_grad(predict_fn)(inputs)
   return l2_norm(predict_grads[irrelevancies])
 
-def init_random_params(scale, layer_sizes, rs=npr.RandomState(0)):
+def init_random_params(scale, layer_sizes, rs=npr):
   return [(scale * rs.randn(m, n),   # weight matrix
            scale * rs.randn(n))      # bias vector
           for m, n in zip(layer_sizes[:-1], layer_sizes[1:])]
@@ -68,7 +68,7 @@ class MultilayerPerceptron(ExplainableModel):
     return elementwise_grad(predict_fn)(inputs.astype(np.float32))
 
   def fit(self, inputs, targets, irrelevancies=None, num_epochs=64,
-      batch_size=256, step_size=0.001, random_state=npr.RandomState(0),
+      batch_size=256, step_size=0.001, random_state=npr,
       nonlinearity=relu):
 
     X = inputs.astype(np.float32)

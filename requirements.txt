@@ -1,4 +1,4 @@
 autograd
-lime
+lime>=0.1.1.19
 numpy
 scikit-learn
