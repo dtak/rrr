@@ -4,7 +4,7 @@ from autograd.scipy.misc import logsumexp
 from autograd import grad, elementwise_grad
 from autograd.util import flatten
 from autograd.optimizers import adam
-from explainable_model import ExplainableModel
+from local_linear_explanation import LocalLinearExplanation
 
 # Adapted from https://github.com/HIPS/autograd/blob/master/examples/neural_net.py
 # with modifications made such that we have a first-class MLP object
@@ -29,27 +29,43 @@ def feed_forward(params, inputs, nonlinearity=relu):
     inputs = nonlinearity(outputs)
   return outputs - logsumexp(outputs, axis=1, keepdims=True) # outputs log probabilities
 
-def l2_irrelevant_input_gradients(params, inputs, irrelevancies):
-  predict_fn = lambda inputs: feed_forward(params, inputs) # swap arg order
-  predict_grads = elementwise_grad(predict_fn)(inputs)
-  return l2_norm(predict_grads[irrelevancies])
+def input_gradients(params, y=None, scale='log'):
+  # log probabilities or probabilities
+  if scale is 'log':
+    p = lambda x: feed_forward(params, x)
+  else:
+    p = lambda x: np.exp(feed_forward(params, x))
+
+  # max, sum, or individual y
+  if y is None: y = 'sum' if scale is 'log' else 'max'
+  if y is 'sum':
+    p2 = p
+  elif y is 'max':
+    p2 = lambda x: np.max(p(x), axis=1)
+  else:
+    p2 = lambda x: p(x)[:, y]
+
+  return elementwise_grad(p2)
+
+def l2_irrelevant_input_gradients(params, X, A, **kwargs):
+  return l2_norm(input_gradients(params, **kwargs)(X)[A])
 
 def init_random_params(scale, layer_sizes, rs=npr):
   return [(scale * rs.randn(m, n),   # weight matrix
            scale * rs.randn(n))      # bias vector
           for m, n in zip(layer_sizes[:-1], layer_sizes[1:])]
 
-class MultilayerPerceptron(ExplainableModel):
+class MultilayerPerceptron():
   @classmethod
   def from_params(klass, params):
     mlp = klass()
     mlp.params = params
     return mlp
 
-  def __init__(self, layer_sizes=(50,30), l2_params=0.0001, l2_grads=0.0001):
+  def __init__(self, layers=(50,30), l2_params=0.0001, l2_grads=0.0001):
     self.l2_params = l2_params
     self.l2_grads = l2_grads
-    self.layer_sizes = list(layer_sizes)
+    self.layers = list(layers)
 
   def predict_proba(self, inputs):
     return np.exp(feed_forward(self.params, inputs))
@@ -60,25 +76,28 @@ class MultilayerPerceptron(ExplainableModel):
   def score(self, inputs, targets):
     return np.mean(self.predict(inputs) == targets)
 
-  def input_gradients(self, inputs, y=None):
-    if y is None:
-      predict_fn = lambda inputs: np.max(self.predict_proba(inputs), axis=1)
-    else:
-      predict_fn = lambda inputs: self.predict_proba(inputs)[:, y]
-    return elementwise_grad(predict_fn)(inputs.astype(np.float32))
+  def input_gradients(self, X, **kwargs):
+    if 'scale' not in kwargs:
+      kwargs['scale'] = None # default to non-log probs
+    return input_gradients(self.params, **kwargs)(X.astype(np.float32))
 
-  def fit(self, inputs, targets, irrelevancies=None, num_epochs=64,
-      batch_size=256, step_size=0.001, random_state=npr,
-      nonlinearity=relu):
+  def grad_explain(self, X, **kwargs):
+    yhats = self.predict(X)
+    coefs = self.input_gradients(X, **kwargs)
+    return [LocalLinearExplanation(X[i], yhats[i], coefs[i]) for i in range(len(X))]
 
+  def largest_gradient_mask(self, X, cutoff=0.67, **kwargs):
+    grads = self.input_gradients(X, **kwargs)
+    return np.array([np.abs(g) > cutoff*np.abs(g).max() for g in grads])
+
+  def fit(self, inputs, targets, A=None, num_epochs=64, batch_size=256,
+      step_size=0.001, rs=npr, nonlinearity=relu, **input_grad_kwargs):
     X = inputs.astype(np.float32)
     y = one_hot(targets)
-    layer_sizes = [X.shape[1]] + self.layer_sizes + [y.shape[1]]
-    params = init_random_params(0.1, layer_sizes, rs=random_state)
+    if A is None: A = np.zeros_like(X).astype(bool)
+    params = init_random_params(0.1, [X.shape[1]] + self.layers + [y.shape[1]], rs=rs)
 
-    if irrelevancies is None:
-      irrelevancies = np.zeros_like(X).astype(bool)
-
+    batch_size = min(batch_size, X.shape[0])
     num_batches = int(np.ceil(X.shape[0] / batch_size))
 
     def batch_indices(iteration):
@@ -90,8 +109,8 @@ class MultilayerPerceptron(ExplainableModel):
       return -(
         np.sum(feed_forward(params, X[idx], nonlinearity) * y[idx]) # cross-entropy
         - self.l2_params * l2_norm(params) # L2 regularization on parameters directly
-        - self.l2_grads * l2_irrelevant_input_gradients( # "Explanation regularization"
-          params, X[idx], irrelevancies[idx]))
+        - self.l2_grads * l2_norm(input_gradients( # "Explanation regularization"
+          params, **input_grad_kwargs)(X[idx])[A[idx]]))
 
     self.params = adam(grad(objective), params, step_size=step_size, num_iters=num_epochs*num_batches)
 

@@ -8,6 +8,13 @@ def listwrap(l):
     return [l]
 
 class LocalLinearExplanation():
+  @classmethod
+  def from_lime(klass, x, y, limexp):
+    coefs = np.zeros(x.shape)
+    for feature, coef in limexp.local_exp[y]:
+      coefs[feature] = coef
+    return klass(x, y, coefs)
+
   def __init__(self, x, y, coefs):
     assert(coefs.shape == x.shape)
     self.x = x
