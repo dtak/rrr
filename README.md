@@ -14,6 +14,7 @@ Sometimes machine learning models generalize poorly even though they seem accura
     - [Iris-Cancer](./experiments/Iris-Cancer.ipynb) applies the same techniques to a very tiny mashup of Iris and Wisconsin Breast Cancer, where Iris serves as a misleading decoy rule.
     - [20 Newsgroups](./experiments/20%20Newsgroups.ipynb) tests input gradients' ability to explain text datasets, with comparisons to LIME text.
     - [Decoy MNIST](./experiments/Decoy%20MNIST.ipynb) is a larger example where we introduce a non-generalizable rule into the MNIST training data which hurts test accuracy if we don't provide explanations.
+    - [Loss Functions](./experiments/Loss%20Functions.ipynb) does some very basic exploration of different explanation regularization formulations for our loss function in the context of Decoy MNIST. There are a lot of potential variants of this method and we only really scratch the surface.
 - `bin/` contains scripts used to train many iterations of models when it was inconvenient to do so from within a notebook
 - `data/` is where we cached raw data and saved model parameters (some of which is `.gitignore`d, but will be regenerated automatically when you clone)
 - `rrr/` contains the code for representing explanations, explainable models, and datasets. [multilayer_perceptron.py](./rrr/multilayer_perceptron.py) defines the model we used repeatedly, which has an sklearn-style `fit(X, y)` interface (accepting an optional annotation mask `A`) and is implemented using [autograd](https://github.com/HIPS/autograd).
