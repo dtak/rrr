@@ -1,14 +1,14 @@
 # Right for the Right Reasons
 
-This repository contains Python modules, scripts, and notebooks used to generate the figures in Right for the Right Reasons.
+This repository contains Python modules, scripts, and notebooks used to generate the figures in [Right for the Right Reasons](https://arxiv.org/abs/1703.03717).
 
 ## Main Idea
 
-Sometimes machine learning models generalize poorly even though they seem accurate on validation datasets, often because our data contains confounding factors we haven't considered. To detect these problems, we want to generate explanations of machine learning models that help us understand whether they are making decisions for the right reasons. Tools like [LIME](https://github.com/marcotcr/lime) can explain any model by presenting local linear approximations of the model's decision boundary, but that approach is computationally intensive and can't fix the problems it reveals. Input gradients actually _are_ local linear approximations of the decision boundary of differentiable models, and furthermore, we can constrain their values in our loss function, which lets us prevent them from learning implicit rules that we know to be wrong. Altogether, we end up with a computationally efficient method of both explaining models and constraining them to be right for the right reasons (or at least slightly better ones). See the paper or the experiments below for more details.
+Sometimes machine learning models generalize poorly even though they seem accurate on validation datasets, often because our data contains confounding factors we haven't considered. To detect these problems, we want to generate explanations of machine learning models that help us understand whether they are making decisions for the right reasons. Tools like [LIME](https://github.com/marcotcr/lime) can explain any model by presenting local linear approximations of the model's decision boundary, but that approach is computationally intensive and can't fix the problems it reveals. Input gradients actually _are_ local linear approximations of the decision boundary of differentiable models, and furthermore, we can constrain their values in our loss function, which lets us prevent them from learning implicit rules that we know to be wrong. Altogether, we end up with a computationally efficient method of both explaining models and constraining them to be right for the right reasons (or at least slightly better ones). See the [paper](https://arxiv.org/abs/1703.03717) or the experiments below for more details.
 
 ## Repository Structure
 
-- `experiments/` contains iPython notebooks used to generate figures. In particular, 
+- `experiments/` contains iPython notebooks used to generate figures. In particular,
     - [2D Intuition](./experiments/2D%20Intuition.ipynb) provides some visualizations illustrating how to think about input gradients.
     - [Toy Colors](./experiments/Toy%20Colors.ipynb) demonstrates explaining and gradually constraining explanations on a toy image dataset, where we have perfect foreknowledge about what the right explanation should be.
     - [Iris-Cancer](./experiments/Iris-Cancer.ipynb) applies the same techniques to a very tiny mashup of Iris and Wisconsin Breast Cancer, where Iris serves as a misleading decoy rule.
