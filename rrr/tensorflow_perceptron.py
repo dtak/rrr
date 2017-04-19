@@ -1,6 +1,7 @@
 import tensorflow as tf
 import numpy as np
 from local_linear_explanation import LocalLinearExplanation
+import time
 
 to_logprob = lambda L: L - tf.reduce_logsumexp(L, axis=1, keep_dims=True)
 
@@ -11,7 +12,7 @@ def one_hot(y):
   return np.array([values == v for v in y], dtype=np.uint8)
 
 class TensorflowPerceptron():
-  def __init__(self, x_dim, y_dim, hidden_layers=[50,30], nonlinearity=tf.nn.relu, weight_sd=0.1, filename='/tmp/mlp.ckpt'):
+  def __init__(self, x_dim, y_dim, hidden_layers=[50,30], nonlinearity=tf.nn.relu, weight_sd=0.1, filename=None):
     self.layer_sizes = [x_dim] + list(hidden_layers) + [y_dim]
     self.X = tf.placeholder("float", [None, x_dim], name="X")
     self.A = tf.placeholder("float", [None, x_dim], name="A")
@@ -27,20 +28,31 @@ class TensorflowPerceptron():
     for i, activation in enumerate([nonlinearity for _ in hidden_layers] + [to_logprob]):
       self.L.append(activation(tf.add(tf.matmul(self.L[i], self.W[i]), self.b[i])))
 
+    if filename is None:
+      filename = '/tmp/mlp-{}.ckpt'.format(time.time())
+
     self.filename = filename
 
-  def loss_function(self, l2_grads=1000, l2_params=0.0001):
-    input_grads = tf.gradients(self.log_prob_ys, self.X)[0]
+  def loss_function(self, l2_grads=1000, l1_grads=0, l2_params=0.0001):
     right_answer_loss = tf.reduce_sum(tf.multiply(self.y, -self.log_prob_ys))
-    right_reason_loss = l2_grads * tf.nn.l2_loss(tf.multiply(self.A, input_grads))
+
+    gradXes = tf.gradients(self.log_prob_ys, self.X)[0]
+    A_gradX = tf.multiply(self.A, gradXes)
+    right_reason_loss = 0
+    if l1_grads > 0:
+      right_reason_loss += l1_grads * tf.reduce_sum(tf.abs(A_gradX))
+    if l2_grads > 0:
+      right_reason_loss += l2_grads * tf.nn.l2_loss(A_gradX)
+
     small_params_loss = l2_params * tf.add_n([tf.nn.l2_loss(p) for p in self.W + self.b])
+
     return right_answer_loss + right_reason_loss + small_params_loss
 
-  def optimizer(self, l2_grads=1000, l2_params=0.0001, learning_rate=0.001):
+  def optimizer(self, l2_grads=1000, l1_grads=0, l2_params=0.0001, learning_rate=0.001):
     optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-    return optimizer.minimize(self.loss_function(l2_grads=l2_grads, l2_params=l2_params))
+    return optimizer.minimize(self.loss_function(l2_grads=l2_grads, l1_grads=l1_grads, l2_params=l2_params))
 
-  def fit(self, X, y, A=None, l2_grads=1000, l2_params=0.001, num_epochs=64, batch_size=256, learning_rate=0.001):
+  def fit(self, X, y, A=None, l2_grads=1000, l1_grads=0, l2_params=0.001, num_epochs=64, batch_size=256, learning_rate=0.001):
     # Ensure dimensions of X and y are correct
     y = one_hot(y)
     num_examples = X.shape[0]
@@ -54,7 +66,7 @@ class TensorflowPerceptron():
     assert(A.shape == X.shape)
 
     # Set up optimization
-    optimizer = self.optimizer(learning_rate=learning_rate, l2_grads=l2_grads, l2_params=l2_params)
+    optimizer = self.optimizer(learning_rate=learning_rate, l2_grads=l2_grads, l1_grads=l1_grads, l2_params=l2_params)
     batch_size = min(batch_size, num_examples)
     num_batches = int(np.ceil(num_examples / batch_size))
 
@@ -72,10 +84,13 @@ class TensorflowPerceptron():
   def log_prob_ys(self):
     return self.L[-1]
 
-  def input_gradients(self, X):
+  def input_gradients(self, X, y=None, log_scale=True):
     with tf.Session() as session:
       tf.train.Saver().restore(session, self.filename)
-      grads = tf.gradients(self.log_prob_ys, self.X)[0].eval(feed_dict={self.X: X})
+      probs = self.log_prob_ys
+      if y is not None: probs = probs[:,y]
+      if not log_scale: probs = tf.exp(probs)
+      grads = tf.gradients(probs, self.X)[0].eval(feed_dict={self.X: X})
     return grads
 
   def predict_log_proba(self, X):
@@ -93,7 +108,7 @@ class TensorflowPerceptron():
   def score(self, X, y):
     return np.mean(self.predict(X) == y)
 
-  def grad_explain(self, X):
+  def grad_explain(self, X, **kwargs):
     yhats = self.predict(X)
-    coefs = self.input_gradients(X)
+    coefs = self.input_gradients(X, **kwargs)
     return [LocalLinearExplanation(X[i], yhats[i], coefs[i]) for i in range(len(X))]
