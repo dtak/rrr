@@ -33,10 +33,10 @@ def word_tags(pred, pos, neg, maxwlen=5, maxwords=10, scale=None):
       wordlen = 0
       html +="<br>"
     words += 1
-    if words >= 10:
+    if words >= maxwords:
       break
 
-  html += "<hr style='margin: 0; padding: 0'>"
+  html += "<hr style='margin: 0; padding: 0; border-color: darkgrey;'>"
 
   wordlen = 0
   words = 0
@@ -47,7 +47,7 @@ def word_tags(pred, pos, neg, maxwlen=5, maxwords=10, scale=None):
       wordlen = 0
       html +="<br>"
     words += 1
-    if words >= 10:
+    if words >= maxwords:
       break
 
   if not neg:
@@ -105,7 +105,7 @@ def email_html(email, row, title=None):
   maxwt = max(maxpos, maxneg)
   for wt, w in poswts:
     email = re.sub(r"([^a-zA-Z0-9]){}([^a-zA-Z0-9])".format(w),
-                   "\\1{}\\2".format("<span style='background: rgba(0,255,0,{})'>{}</span>".format((wt/maxwt)**2, w)),
+                   "\\1{}\\2".format("<span style='background: rgba(0,255,0,{});'>{}</span>".format((wt/maxwt)**2, w)),
                    email)
   for wt, w in negwts:
     email = re.sub(r"([^a-zA-Z0-9]){}([^a-zA-Z0-9])".format(w),
@@ -125,3 +125,4 @@ def compare_emails(email, grad_row, lime_row):
   graddiv = '<div style="width:49%">' + gmail + '</div>'
   limediv = '<div style="width:49%;float:right;margin-left:2%">' + lmail + '</div>'
   return limediv + graddiv
+
