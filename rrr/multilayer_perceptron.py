@@ -91,12 +91,16 @@ class MultilayerPerceptron():
     return np.array([np.abs(g) > cutoff*np.abs(g).max() for g in grads])
 
   def fit(self, inputs, targets, A=None, num_epochs=64, batch_size=256,
-      step_size=0.001, rs=npr, nonlinearity=relu, verbose=False,
+      step_size=0.001, rs=npr, nonlinearity=relu, verbose=False, normalize=False,
       **input_grad_kwargs):
     X = inputs.astype(np.float32)
     y = one_hot(targets)
     if A is None: A = np.zeros_like(X).astype(bool)
     params = init_random_params(0.1, [X.shape[1]] + self.layers + [y.shape[1]], rs=rs)
+
+    if type(verbose) == int:
+      v = verbose
+      verbose = lambda x: x % v == 0
 
     batch_size = min(batch_size, X.shape[0])
     num_batches = int(np.ceil(X.shape[0] / batch_size))
@@ -113,13 +117,20 @@ class MultilayerPerceptron():
 
       sumA = max(1., float(Ai.sum()))
       lenX = max(1., float(len(Xi)))
+      if normalize:
+        sumA = max(1., float(Ai.sum()))
+        lenX = max(1., float(len(Xi)))
+      else:
+        sumA = 1.
+        lenX = 1.
 
       crossentropy = -np.sum(feed_forward(params, Xi, nonlinearity) * yi) / lenX
       rightreasons = self.l2_grads * l2_norm(input_gradients(params, **input_grad_kwargs)(Xi)[Ai]) / sumA
       smallparams = self.l2_params * l2_norm(params)
 
-      if verbose and iteration % verbose == 0:
-        print(crossentropy/rightreasons, crossentropy, rightreasons, smallparams)
+      if verbose and verbose(iteration):
+        print('Iteration={}, crossentropy={}, rightreasons={}, smallparams={}, sumA={}, lenX={}'.format(
+          iteration, crossentropy.value, rightreasons.value, smallparams.value, sumA, lenX))
 
       return crossentropy + rightreasons + smallparams
 
