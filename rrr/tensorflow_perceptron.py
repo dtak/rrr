@@ -12,7 +12,7 @@ def one_hot(y):
   return np.array([values == v for v in y], dtype=np.uint8)
 
 class TensorflowPerceptron():
-  def __init__(self, x_dim, y_dim, hidden_layers=[50,30], nonlinearity=tf.nn.relu, weight_sd=0.1, filename=None):
+  def __init__(self, x_dim, y_dim, hidden_layers=[50,30], nonlinearity=tf.nn.relu, weight_sd=0.1):
     self.layer_sizes = [x_dim] + list(hidden_layers) + [y_dim]
     self.X = tf.placeholder("float", [None, x_dim], name="X")
     self.A = tf.placeholder("float", [None, x_dim], name="A")
@@ -27,11 +27,6 @@ class TensorflowPerceptron():
 
     for i, activation in enumerate([nonlinearity for _ in hidden_layers] + [to_logprob]):
       self.L.append(activation(tf.add(tf.matmul(self.L[i], self.W[i]), self.b[i])))
-
-    if filename is None:
-      filename = '/tmp/mlp-{}.ckpt'.format(time.time())
-
-    self.filename = filename
 
   def loss_function(self, l2_grads=1000, l1_grads=0, l2_params=0.0001):
     right_answer_loss = tf.reduce_sum(tf.multiply(self.y, -self.log_prob_ys))
@@ -70,15 +65,18 @@ class TensorflowPerceptron():
     batch_size = min(batch_size, num_examples)
     num_batches = int(np.ceil(num_examples / batch_size))
 
-    init = tf.global_variables_initializer()
-    saver = tf.train.Saver()
-
     with tf.Session() as sess:
-      sess.run(init)
+      sess.run(tf.global_variables_initializer())
       for i in range(num_epochs*num_batches):
         idx = slice((i%num_batches)*batch_size, ((i%num_batches)+1)*batch_size)
         sess.run(optimizer, feed_dict={self.X: X[idx], self.y: y[idx], self.A: A[idx]})
-      saver.save(sess, self.filename)
+      self.W_vals = [weights.eval() for weights in self.W]
+      self.b_vals = [biases.eval() for biases in self.b]
+
+  def _initialize_variables(self, sess):
+    sess.run(tf.global_variables_initializer())
+    for var, val in zip(self.W + self.b, self.W_vals + self.b_vals):
+      sess.run(var.assign(val))
 
   @property
   def log_prob_ys(self):
@@ -86,7 +84,7 @@ class TensorflowPerceptron():
 
   def input_gradients(self, X, y=None, log_scale=True):
     with tf.Session() as session:
-      tf.train.Saver().restore(session, self.filename)
+      self._initialize_variables(session)
       probs = self.log_prob_ys
       if y is not None: probs = probs[:,y]
       if not log_scale: probs = tf.exp(probs)
@@ -95,7 +93,7 @@ class TensorflowPerceptron():
 
   def predict_log_proba(self, X):
     with tf.Session() as session:
-      tf.train.Saver().restore(session, self.filename)
+      self._initialize_variables(session)
       log_probs = self.log_prob_ys.eval(feed_dict={self.X: X})
     return log_probs
 
