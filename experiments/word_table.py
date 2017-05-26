@@ -16,14 +16,13 @@ def word_tags(pred, pos, neg, maxwlen=5, maxwords=10, scale=None):
     if pred == 'alt.atheism':
       weight = -weight
     if weight >= 0:
-      color = 'rgba(0,255,0,{})'.format(min(1, smooth(weight/scale)))
+      color = 'rgba(155,217,230,{})'.format(min(1, smooth(weight/scale)))
     else:
-      color = 'rgba(255,0,0,{})'.format(min(1, smooth(-weight/scale)))
+      color = 'rgba(238,125,50,{})'.format(min(1, smooth(-weight/scale)))
     return 'margin-right: 5px; background: {}'.format(color)
 
   html = ""
-  html += pred.split('.')[-1] + "<br>"
-
+  
   wordlen = 0
   words = 0
   for weight, word in pos:
@@ -97,32 +96,40 @@ def word_table(columns, headers, cutoff=None, startafter=None, style='table-layo
   html += "</tbody></table>"
   return html
 
-def email_html(email, row, title=None):
+other_label = {'alt.atheism': 'soc.religion.christian', 'soc.religion.christian':'alt.atheism'}
+
+def email_html(email, row, title=None, swatches=True, power=2):
   pred, poswts, negwts = row
+
+  email = email.replace('<', '&lt;')
+  email = email.replace('>', '&gt;')
   
   maxpos = max(wt for wt,_ in poswts) if poswts else 0
   maxneg = max(-wt for wt,_ in negwts) if negwts else 0
   maxwt = max(maxpos, maxneg)
   for wt, w in poswts:
     email = re.sub(r"([^a-zA-Z0-9]){}([^a-zA-Z0-9])".format(w),
-                   "\\1{}\\2".format("<span style='background: rgba(0,255,0,{});'>{}</span>".format((wt/maxwt)**2, w)),
+                   "\\1{}\\2".format("<span style='background: rgba(155,217,230,{});'>{}</span>".format((wt/maxwt)**power, w)),
                    email)
   for wt, w in negwts:
     email = re.sub(r"([^a-zA-Z0-9]){}([^a-zA-Z0-9])".format(w),
-                   "\\1{}\\2".format("<span style='background: rgba(255,0,0,{})'>{}</span>".format((-wt/maxwt)**2, w)),
+                   "\\1{}\\2".format("<span style='background: rgba(238,125,50,{})'>{}</span>".format((-wt/maxwt)**power, w)),
                    email)
   email = email.replace('\n', '<br>')
+  swatch1=''
+  swatch2=''
+  if swatches:
+    swatch1= '<span style="background: rgb(155,217,230); font-family:monospace; padding: 0 5px; margin-left: 5px;">+{}</span>'.format(pred)
+    swatch2= '<span style="background: rgb(238,125,50); font-family:monospace; padding: 0 5px; margin-left: 5px;">+{}</span>'.format(other_label[pred])
+
   if title is None:
     title = 'Prediction: {}'.format(pred)
-  else:
-    title = '{} ({})'.format(title, pred)
-  email = '<h4>{}</h4><hr>'.format(title) + email
+  email = '<h4>{} {} {}</h4> <hr>'.format(title, swatch1, swatch2) + email
   return email
 
-def compare_emails(email, grad_row, lime_row):
-  gmail = email_html(email, grad_row, 'Input gradients')
-  lmail = email_html(email, lime_row, 'LIME')
+def compare_emails(email, grad_row, lime_row, **kwargs):
+  gmail = email_html(email, grad_row, 'Input gradients', **kwargs)
+  lmail = email_html(email, lime_row, 'LIME', swatches=True, **kwargs)
   graddiv = '<div style="width:49%">' + gmail + '</div>'
   limediv = '<div style="width:49%;float:right;margin-left:2%">' + lmail + '</div>'
   return limediv + graddiv
-

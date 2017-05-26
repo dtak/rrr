@@ -71,9 +71,7 @@ class LocalLinearExplanation():
                 c=colors[int(np.sign(coef))], # make color
                 marker=markers[int(np.sign(coef))]) # and marker depend on sign
 
-def explanation_grid(explanations, imgshape, length, pad=0.1, **kwargs):
-  assert(len(explanations) >= length*length)
-
+def explanation_grid(explanations, imgshape, length=None, gridshape=None, pad=0.1, **kwargs):
   if len(imgshape) == 2:
     l,l2 = imgshape
     assert(l == l2)
@@ -82,15 +80,24 @@ def explanation_grid(explanations, imgshape, length, pad=0.1, **kwargs):
     assert(l == l2)
     assert(d == 3)
 
-  plt.axis('off')
-  plt.xlim(0, l*(length*(1+pad)))
-  plt.ylim(0, l*(length*(1+pad)))
+  if gridshape is None:
+    if length is None:
+      length = int(np.ceil(np.sqrt(len(explanations))))
+    gridshape = (length, length)
+  xlength, ylength = gridshape
+
+  plt.xticks([])
+  plt.yticks([])
+  for spine in plt.gca().spines.values():
+    spine.set_visible(False)
+  plt.xlim(0, l*(xlength*(1+pad)))
+  plt.ylim(0, l*(ylength*(1+pad)))
   n = 0
-  for i in range(length):
-    for j in range(length):
-      explanations[n].imshow(imgshape, xoff=i*(1+pad), yoff=(length-j-1)*(1+pad), **kwargs)
+  for i in range(xlength):
+    for j in range(ylength):
+      explanations[n].imshow(imgshape, xoff=i*(1+pad), yoff=(ylength-j-1)*(1+pad), **kwargs)
       n += 1
 
-def image_grid(images, imgshape, length, **kwargs):
+def image_grid(images, imgshape, length=None, **kwargs):
   fauxpls = [LocalLinearExplanation(images[i], 0, np.zeros_like(images[i])) for i in range(len(images))]
   explanation_grid(fauxpls, imgshape, length, **kwargs)

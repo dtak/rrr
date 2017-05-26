@@ -92,6 +92,7 @@ class MultilayerPerceptron():
 
   def fit(self, inputs, targets, A=None, num_epochs=64, batch_size=256,
       step_size=0.001, rs=npr, nonlinearity=relu, verbose=False, normalize=False,
+      always_include=None,
       **input_grad_kwargs):
     X = inputs.astype(np.float32)
     y = one_hot(targets)
@@ -115,8 +116,11 @@ class MultilayerPerceptron():
       Xi = X[idx]
       yi = y[idx]
 
-      sumA = max(1., float(Ai.sum()))
-      lenX = max(1., float(len(Xi)))
+      if always_include is not None:
+        Ai = np.vstack((A[always_include], Ai))
+        Xi = np.vstack((X[always_include], Xi))
+        yi = np.vstack((y[always_include], yi))
+
       if normalize:
         sumA = max(1., float(Ai.sum()))
         lenX = max(1., float(len(Xi)))

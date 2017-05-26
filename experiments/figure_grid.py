@@ -14,7 +14,7 @@ class figure_grid():
     def title(self, title, fontsize=14, **kwargs):
         self.fig.suptitle(title, y=1.05, fontsize=fontsize, **kwargs)
 
-    def __init__(self, rows, cols, rowheight=3, rowwidth=12, after_each=lambda: None):
+    def __init__(self, rows, cols, rowheight=3, rowwidth=12, after_each=lambda: None, after_all=lambda fig: None):
         self.rows = rows
         self.cols = cols
         self.fig = plt.figure(figsize=(rowwidth, rowheight*self.rows))
@@ -22,6 +22,7 @@ class figure_grid():
         if after_each == 'legend':
           after_each = lambda: plt.legend(loc='best')
         self.after_each = after_each
+        self.after_all = after_all
 
     def __enter__(self):
         return self
@@ -29,6 +30,7 @@ class figure_grid():
     def __exit__(self, _type, _value, _traceback):
         self.after_each()
         plt.tight_layout()
+        self.after_all(self.fig)
         plt.show()
 
     next = next_subplot
