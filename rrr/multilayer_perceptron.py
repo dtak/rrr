@@ -91,11 +91,17 @@ class MultilayerPerceptron():
     return np.array([np.abs(g) > cutoff*np.abs(g).max() for g in grads])
 
   def fit(self, inputs, targets, A=None, num_epochs=64, batch_size=256,
-      step_size=0.001, rs=npr, nonlinearity=relu, **input_grad_kwargs):
+      step_size=0.001, rs=npr, nonlinearity=relu, verbose=False, normalize=False,
+      always_include=None,
+      **input_grad_kwargs):
     X = inputs.astype(np.float32)
     y = one_hot(targets)
     if A is None: A = np.zeros_like(X).astype(bool)
     params = init_random_params(0.1, [X.shape[1]] + self.layers + [y.shape[1]], rs=rs)
+
+    if type(verbose) == int:
+      v = verbose
+      verbose = lambda x: x % v == 0
 
     batch_size = min(batch_size, X.shape[0])
     num_batches = int(np.ceil(X.shape[0] / batch_size))
@@ -106,11 +112,31 @@ class MultilayerPerceptron():
 
     def objective(params, iteration):
       idx = batch_indices(iteration)
-      return -(
-        np.sum(feed_forward(params, X[idx], nonlinearity) * y[idx]) # cross-entropy
-        - self.l2_params * l2_norm(params) # L2 regularization on parameters directly
-        - self.l2_grads * l2_norm(input_gradients( # "Explanation regularization"
-          params, **input_grad_kwargs)(X[idx])[A[idx]]))
+      Ai = A[idx]
+      Xi = X[idx]
+      yi = y[idx]
+
+      if always_include is not None:
+        Ai = np.vstack((A[always_include], Ai))
+        Xi = np.vstack((X[always_include], Xi))
+        yi = np.vstack((y[always_include], yi))
+
+      if normalize:
+        sumA = max(1., float(Ai.sum()))
+        lenX = max(1., float(len(Xi)))
+      else:
+        sumA = 1.
+        lenX = 1.
+
+      crossentropy = -np.sum(feed_forward(params, Xi, nonlinearity) * yi) / lenX
+      rightreasons = self.l2_grads * l2_norm(input_gradients(params, **input_grad_kwargs)(Xi)[Ai]) / sumA
+      smallparams = self.l2_params * l2_norm(params)
+
+      if verbose and verbose(iteration):
+        print('Iteration={}, crossentropy={}, rightreasons={}, smallparams={}, sumA={}, lenX={}'.format(
+          iteration, crossentropy.value, rightreasons.value, smallparams.value, sumA, lenX))
+
+      return crossentropy + rightreasons + smallparams
 
     self.params = adam(grad(objective), params, step_size=step_size, num_iters=num_epochs*num_batches)
 
