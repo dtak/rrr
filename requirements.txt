@@ -1,4 +1,0 @@
-autograd==1.1.7
-lime>=0.1.1.19
-numpy
-scikit-learn

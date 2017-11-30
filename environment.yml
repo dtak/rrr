@@ -1,0 +1,13 @@
+name: rrr
+channels:
+    - conda-forge
+dependencies:
+- python=3.6
+- numpy
+- ipykernel
+- scikit-learn
+- scikit-image=0.13.0
+- future>=0.15.2
+- pip:
+  - lime>=0.1.1.19
+  - autograd==1.1.7
