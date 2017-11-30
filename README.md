@@ -1,10 +1,10 @@
 # Right for the Right Reasons
 
-This repository contains Python modules, scripts, and notebooks used to generate the figures in [Right for the Right Reasons](https://arxiv.org/abs/1703.03717).
+This repository contains Python modules, scripts, and notebooks used to generate the figures in [Right for the Right Reasons](https://www.ijcai.org/proceedings/2017/371).
 
 ## Main Idea
 
-Sometimes machine learning models generalize poorly even though they seem accurate on validation datasets, often because our data contains confounding factors we haven't considered. To detect these problems, we want to generate explanations of machine learning models that help us understand whether they are making decisions for the right reasons. Tools like [LIME](https://github.com/marcotcr/lime) can explain any model by presenting local linear approximations of the model's decision boundary, but that approach is computationally intensive and can't fix the problems it reveals. Input gradients actually _are_ local linear approximations of the decision boundary of differentiable models, and furthermore, we can constrain their values in our loss function, which lets us prevent them from learning implicit rules that we know to be wrong. Altogether, we end up with a computationally efficient method of both explaining models and constraining them to be right for the right reasons (or at least slightly better ones). See the [paper](https://arxiv.org/abs/1703.03717) or the experiments below for more details.
+Sometimes machine learning models generalize poorly even though they seem accurate on validation datasets, often because our data contains confounding factors we haven't considered. To detect these problems, we want to generate explanations of machine learning models that help us understand whether they are making decisions for the right reasons. Tools like [LIME](https://github.com/marcotcr/lime) can explain any model by presenting local linear approximations of the model's decision boundary, but that approach is computationally intensive and can't fix the problems it reveals. Input gradients actually _are_ local linear approximations of the decision boundary of differentiable models, and furthermore, we can constrain their values in our loss function, which lets us prevent them from learning implicit rules that we know to be wrong. Altogether, we end up with a computationally efficient method of both explaining models and constraining them to be right for the right reasons (or at least slightly better ones). See the [paper](https://www.ijcai.org/proceedings/2017/371) or the experiments below for more details.
 
 ## Repository Structure
 
@@ -21,6 +21,17 @@ Sometimes machine learning models generalize poorly even though they seem accura
 
 If you have `numpy`, `scikit-learn`, `autograd`, and `lime` installed, you should be able to run all of the notebooks and scripts after cloning this repository.
 
-## License
+## Citation
 
-[MIT](https://opensource.org/licenses/MIT)
+```
+@inproceedings{ijcai2017-371,
+  author    = {Andrew Slavin Ross, Michael C. Hughes, Finale Doshi-Velez},
+  title     = {Right for the Right Reasons: Training Differentiable Models by Constraining their Explanations},
+  booktitle = {Proceedings of the Twenty-Sixth International Joint Conference on
+               Artificial Intelligence, {IJCAI-17}},
+  pages     = {2662--2670},
+  year      = {2017},
+  doi       = {10.24963/ijcai.2017/371},
+  url       = {https://doi.org/10.24963/ijcai.2017/371},
+}
+```
