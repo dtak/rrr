@@ -2,6 +2,10 @@
 
 This repository contains Python modules, scripts, and notebooks used to generate the figures in [Right for the Right Reasons](https://www.ijcai.org/proceedings/2017/371).
 
+To see the codebase live on binder click the button below:
+
+[![Binder](https://mybinder.org/badge.svg)](https://mybinder.org/v2/gh/dtak/rrr/master?urlpath=lab)
+
 ## Main Idea
 
 Sometimes machine learning models generalize poorly even though they seem accurate on validation datasets, often because our data contains confounding factors we haven't considered. To detect these problems, we want to generate explanations of machine learning models that help us understand whether they are making decisions for the right reasons. Tools like [LIME](https://github.com/marcotcr/lime) can explain any model by presenting local linear approximations of the model's decision boundary, but that approach is computationally intensive and can't fix the problems it reveals. Input gradients actually _are_ local linear approximations of the decision boundary of differentiable models, and furthermore, we can constrain their values in our loss function, which lets us prevent them from learning implicit rules that we know to be wrong. Altogether, we end up with a computationally efficient method of both explaining models and constraining them to be right for the right reasons (or at least slightly better ones). See the [paper](https://www.ijcai.org/proceedings/2017/371) or the experiments below for more details.
