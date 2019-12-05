@@ -29,7 +29,7 @@ If you have `numpy`, `scikit-learn`, `autograd`, and `lime` installed, you shoul
 
 ```
 @inproceedings{ijcai2017-371,
-  author    = {Andrew Slavin Ross, Michael C. Hughes, Finale Doshi-Velez},
+  author    = {Ross, Andrew Slavin and Hughes, Michael C. Hughes and Doshi-Velez, Finale},
   title     = {Right for the Right Reasons: Training Differentiable Models by Constraining their Explanations},
   booktitle = {Proceedings of the Twenty-Sixth International Joint Conference on
                Artificial Intelligence, {IJCAI-17}},
